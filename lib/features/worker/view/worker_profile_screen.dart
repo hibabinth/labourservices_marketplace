@@ -43,8 +43,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     final endDate = DateTime.tryParse(value);
     if (endDate == null) return 'Not available';
 
-    final now = DateTime.now();
-    final difference = endDate.difference(now).inDays;
+    final difference = endDate.difference(DateTime.now()).inDays;
 
     if (difference < 0) return 'Expired';
     if (difference == 0) return 'Expires today';
@@ -238,50 +237,26 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
 
                 const SizedBox(height: 22),
 
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+                _ProfileInfoCard(
+                  title: 'Profile Completion',
+                  children: const [
+                    LinearProgressIndicator(
+                      value: 0.85,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      backgroundColor: Color(0xFFEAF1FF),
+                      valueColor: AlwaysStoppedAnimation(Color(0xFF1E63F3)),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Your profile looks professional. Add more portfolio items later to improve trust.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF7A8599),
+                        height: 1.5,
                       ),
-                    ],
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Profile Completion',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1C274C),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      LinearProgressIndicator(
-                        value: 0.85,
-                        minHeight: 8,
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                        backgroundColor: Color(0xFFEAF1FF),
-                        valueColor: AlwaysStoppedAnimation(Color(0xFF1E63F3)),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Your profile looks professional. Add more portfolio items later to improve trust.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF7A8599),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 22),
@@ -313,6 +288,18 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   subtitle: 'Switch or update your labour service category',
                   onTap: () async {
                     await Navigator.pushNamed(context, '/worker-category');
+                    if (!mounted) return;
+                    await _reloadProfile();
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                _ProfileActionCard(
+                  icon: Icons.workspace_premium_outlined,
+                  title: 'Subscription Plans',
+                  subtitle: 'Upgrade your plan and continue receiving bookings',
+                  onTap: () async {
+                    await Navigator.pushNamed(context, '/worker-subscription');
                     if (!mounted) return;
                     await _reloadProfile();
                   },

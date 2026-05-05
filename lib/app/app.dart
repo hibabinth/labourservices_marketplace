@@ -10,6 +10,7 @@ import 'package:labour_service/features/user/view/user_search_screen.dart';
 import 'package:labour_service/features/worker/view/worker_main_screen.dart';
 import 'package:labour_service/features/worker/view/worker_category_screen.dart';
 import 'package:labour_service/features/worker/view/worker_profile_setup_screen.dart';
+import 'package:labour_service/features/worker/view/worker_subscription_screen.dart';
 import '../features/auth/view/auth_gate_screen.dart';
 import '../features/auth/view/forgot_password_screen.dart';
 import '../features/auth/view/login_screen.dart';
@@ -49,6 +50,7 @@ class LabrixApp extends StatelessWidget {
             const PlaceholderScreen(title: 'Super Admin Home'),
         '/admin-users': (_) => AdminUsersScreen(),
         '/admin-workers': (_) => AdminWorkersScreen(),
+        '/worker-subscription': (context) => const WorkerSubscriptionScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
