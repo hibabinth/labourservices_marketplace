@@ -37,7 +37,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-
               await context.read<AuthViewModel>().signOut();
 
               if (!mounted) return;
@@ -142,7 +141,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         const SizedBox(height: 6),
         const Text(
-          'Monitor users, workers, bookings, and platform activity.',
+          'Monitor users, workers, bookings, revenue, and subscriptions.',
           style: TextStyle(fontSize: 14, color: Color(0xFF7A8599)),
         ),
         const SizedBox(height: 20),
@@ -151,7 +150,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.15,
+          childAspectRatio: 1.05,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
@@ -175,7 +174,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             _DashboardActionCard(
               onTap: () {
-                if (Navigator.canPop(context)) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Admin bookings screen not added yet'),
@@ -206,6 +204,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: vm.incompleteWorkerProfiles.toString(),
               subtitle: 'Incomplete profiles',
               icon: Icons.assignment_late_outlined,
+            ),
+
+            // ✅ NEW REVENUE / SUBSCRIPTION CARDS
+            _StatCard(
+              title: 'Revenue',
+              value: '₹${vm.totalRevenue.toStringAsFixed(0)}',
+              subtitle: 'Total subscription income',
+              icon: Icons.currency_rupee,
+            ),
+            _StatCard(
+              title: 'Active Plans',
+              value: vm.activeSubscriptions.toString(),
+              subtitle: 'Paid subscriptions',
+              icon: Icons.workspace_premium_outlined,
+            ),
+            _StatCard(
+              title: 'Trial Workers',
+              value: vm.trialSubscriptions.toString(),
+              subtitle: 'Free trial workers',
+              icon: Icons.card_giftcard_outlined,
+            ),
+            _StatCard(
+              title: 'Expired Plans',
+              value: vm.expiredSubscriptions.toString(),
+              subtitle: 'Expired subscriptions',
+              icon: Icons.event_busy_outlined,
             ),
           ],
         ),
@@ -340,8 +364,10 @@ class _StatCard extends StatelessWidget {
           const Spacer(),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
               color: Color(0xFF1C274C),
             ),
@@ -349,8 +375,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
               color: Color(0xFF1C274C),
             ),
@@ -358,7 +386,9 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8599)),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF7A8599)),
           ),
         ],
       ),
