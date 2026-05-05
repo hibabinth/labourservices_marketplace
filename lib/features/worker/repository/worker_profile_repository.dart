@@ -37,6 +37,11 @@ class WorkerProfileRepository {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
 
+    await _service.client.from('profiles').upsert({
+      'id': user.id,
+      'role': 'worker',
+    });
+
     await _service.client.from('worker_profiles').upsert({
       'id': user.id,
       'category': category,
@@ -61,6 +66,7 @@ class WorkerProfileRepository {
       'id': user.id,
       'full_name': fullName,
       'phone': phone,
+      'role': 'worker',
     });
 
     final existing = await _service.client
@@ -82,6 +88,23 @@ class WorkerProfileRepository {
       'availability': availability,
       'is_profile_complete': true,
     });
+
+    final existingSubscription = await _service.client
+        .from('worker_subscriptions')
+        .select('id')
+        .eq('worker_id', user.id)
+        .maybeSingle();
+
+    if (existingSubscription == null) {
+      await _service.client.from('worker_subscriptions').insert({
+        'worker_id': user.id,
+        'start_date': DateTime.now().toIso8601String(),
+        'end_date': DateTime.now()
+            .add(const Duration(days: 7))
+            .toIso8601String(),
+        'status': 'trial',
+      });
+    }
   }
 
   Future<String?> getProfileImageUrl() async {
@@ -97,17 +120,13 @@ class WorkerProfileRepository {
     final storedValue = data?['avatar_url'] as String?;
     if (storedValue == null || storedValue.isEmpty) return null;
 
-    // If old data already contains full URL, use it directly
     if (storedValue.startsWith('http')) {
       return storedValue;
     }
 
-    // If DB stores storage path like avatars/xxx.jpg
-    final imageUrl = _service.client.storage
+    return _service.client.storage
         .from('worker-profile-images')
         .getPublicUrl(storedValue);
-
-    return imageUrl;
   }
 
   Future<String> uploadProfileImage(File file) async {
@@ -123,17 +142,14 @@ class WorkerProfileRepository {
         .from('worker-profile-images')
         .upload(filePath, file, fileOptions: const FileOptions(upsert: true));
 
-    // Save ONLY the storage path in DB
     await _service.client
         .from('profiles')
         .update({'avatar_url': filePath})
         .eq('id', user.id);
 
-    final imageUrl = _service.client.storage
+    return _service.client.storage
         .from('worker-profile-images')
         .getPublicUrl(filePath);
-
-    return imageUrl;
   }
 
   Future<Map<String, dynamic>?> getWorkerProfile() async {
