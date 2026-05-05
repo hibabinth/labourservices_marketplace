@@ -226,4 +226,41 @@ class WorkerProfileRepository {
 
     return response;
   }
+
+  Future<List<Map<String, dynamic>>> getSubscriptionPlans() async {
+    final response = await _service.client
+        .from('subscription_plans')
+        .select('id, name, description, price, duration_days, is_active')
+        .eq('is_active', true)
+        .order('price', ascending: true);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> activateSubscription({
+    required String planId,
+    required num amount,
+    required int durationDays,
+  }) async {
+    final user = _service.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    final now = DateTime.now();
+
+    await _service.client.from('subscription_payments').insert({
+      'worker_id': user.id,
+      'plan_id': planId,
+      'amount': amount,
+      'payment_status': 'paid',
+      'payment_id': 'manual_test_payment',
+    });
+
+    await _service.client.from('worker_subscriptions').insert({
+      'worker_id': user.id,
+      'plan_id': planId,
+      'start_date': now.toIso8601String(),
+      'end_date': now.add(Duration(days: durationDays)).toIso8601String(),
+      'status': 'active',
+    });
+  }
 }
