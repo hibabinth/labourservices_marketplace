@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1087898841741",
+    "project_id": "labourservice-ab8bd",
+    "storage_bucket": "labourservice-ab8bd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1087898841741:android:97213bf4259f994848e8c4",
+        "android_client_info": {
+          "package_name": "com.example.labourservice"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1087898841741-3a0tahn5kbb3d8bnpcb48hu25u54q8if.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.labourservice",
+            "certificate_hash": "07477147cdce11ac2b7870c8a17f140e68f04059"
+          }
+        },
+        {
+          "client_id": "1087898841741-uav9m68d7sb21270ha92tnhc8eg34uti.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALHdxYOqdb5LJhXoSOpBfIg1yOufQ5aHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1087898841741-uav9m68d7sb21270ha92tnhc8eg34uti.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
