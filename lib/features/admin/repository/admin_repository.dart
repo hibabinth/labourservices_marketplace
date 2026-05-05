@@ -127,4 +127,48 @@ class AdminRepository {
 
     return List<Map<String, dynamic>>.from(response);
   }
+
+  Future<double> getTotalRevenue() async {
+    final response = await _service.client
+        .from('subscription_payments')
+        .select('amount')
+        .eq('payment_status', 'paid');
+
+    final data = List<Map<String, dynamic>>.from(response);
+
+    double total = 0;
+
+    for (final item in data) {
+      total += (item['amount'] as num?)?.toDouble() ?? 0;
+    }
+
+    return total;
+  }
+
+  Future<int> getActiveSubscriptionsCount() async {
+    final response = await _service.client
+        .from('worker_subscriptions')
+        .select('id')
+        .eq('status', 'active');
+
+    return (response as List).length;
+  }
+
+  Future<int> getTrialSubscriptionsCount() async {
+    final response = await _service.client
+        .from('worker_subscriptions')
+        .select('id')
+        .eq('status', 'trial');
+
+    return (response as List).length;
+  }
+
+  Future<int> getExpiredSubscriptionsCount() async {
+    final response = await _service.client
+        .from('worker_subscriptions')
+        .select('id')
+        .eq('status', 'expired');
+
+    return (response as List).length;
+  }
 }
