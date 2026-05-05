@@ -17,6 +17,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       final vm = context.read<AuthViewModel>();
       await vm.loadWorkerProfile();
       await vm.loadProfileImageUrl();
+      await vm.loadWorkerSubscription();
     });
   }
 
@@ -24,12 +25,28 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     final vm = context.read<AuthViewModel>();
     await vm.loadWorkerProfile();
     await vm.loadProfileImageUrl();
+    await vm.loadWorkerSubscription();
+  }
+
+  String _formatDate(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Not available';
+
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AuthViewModel>();
     final data = vm.workerProfileData;
+
+    final subscription = vm.workerSubscriptionData;
+    final subscriptionStatus = (subscription?['status'] ?? 'No Plan')
+        .toString()
+        .toUpperCase();
+    final endDate = _formatDate(subscription?['end_date']?.toString());
 
     final fullName = (data?['full_name']?.toString().trim().isNotEmpty ?? false)
         ? data!['full_name'].toString()
@@ -146,10 +163,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         alignment: WrapAlignment.center,
-                        children: const [
-                          _InfoChip(label: 'Active'),
-                          _InfoChip(label: 'Worker'),
-                          _InfoChip(label: 'Profile Ready'),
+                        children: [
+                          _InfoChip(label: subscriptionStatus),
+                          const _InfoChip(label: 'Worker'),
+                          const _InfoChip(label: 'Profile Ready'),
                         ],
                       ),
                     ],
@@ -194,6 +211,49 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                         icon: Icons.location_on_outlined,
                         label: 'Location',
                         value: location,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Subscription',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1C274C),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _InfoRow(
+                        icon: Icons.workspace_premium_outlined,
+                        label: 'Status',
+                        value: subscriptionStatus,
+                      ),
+                      const SizedBox(height: 10),
+                      _InfoRow(
+                        icon: Icons.event_available_outlined,
+                        label: 'Valid Until',
+                        value: endDate,
                       ),
                     ],
                   ),
@@ -263,18 +323,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   title: 'Edit Profile',
                   subtitle: 'Update your personal and work details',
                   onTap: () async {
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/worker-profile-setup',
-                    );
-
+                    await Navigator.pushNamed(context, '/worker-profile-setup');
                     if (!mounted) return;
-
-                    if (result == true) {
-                      await _reloadProfile();
-                    } else {
-                      await _reloadProfile();
-                    }
+                    await _reloadProfile();
                   },
                 ),
                 const SizedBox(height: 12),
