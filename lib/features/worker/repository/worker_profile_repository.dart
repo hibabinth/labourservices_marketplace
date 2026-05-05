@@ -201,4 +201,29 @@ class WorkerProfileRepository {
 
     return (data?['availability'] as String?) ?? 'Offline';
   }
+
+  Future<Map<String, dynamic>?> getCurrentSubscription() async {
+    final user = _service.currentUser;
+    if (user == null) return null;
+
+    final response = await _service.client
+        .from('worker_subscriptions')
+        .select('''
+        id,
+        status,
+        start_date,
+        end_date,
+        subscription_plans (
+          name,
+          price,
+          duration_days
+        )
+      ''')
+        .eq('worker_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    return response;
+  }
 }
