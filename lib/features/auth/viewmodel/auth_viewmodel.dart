@@ -15,6 +15,7 @@ class AuthViewModel extends ChangeNotifier {
     required this.profileRepository,
     required this.workerProfileRepository,
   });
+  Map<String, dynamic>? workerSubscriptionData;
 
   Map<String, dynamic>? userProfileData;
   String? userProfileImageUrl;
@@ -455,6 +456,19 @@ class AuthViewModel extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> loadWorkerSubscription() async {
+    try {
+      workerSubscriptionData = await workerProfileRepository
+          .getCurrentSubscription();
+
+      notifyListeners();
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('LOAD WORKER SUBSCRIPTION ERROR => $e');
+      notifyListeners();
     }
   }
 }
