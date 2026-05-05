@@ -5,55 +5,43 @@ class AdminRepository {
 
   AdminRepository(this._service);
 
-  Future<int> getTotalUsersCount() async {
-    final response = await _service.client
-        .from('profiles')
-        .select('id')
-        .eq('role', 'user');
+  Future<int> _count(String table, {String? column, dynamic value}) async {
+    var query = _service.client.from(table).select('id');
 
-    return (response as List).length;
+    if (column != null) {
+      query = query.eq(column, value);
+    }
+
+    final response = await query;
+    return response.length;
   }
 
-  Future<int> getTotalWorkersCount() async {
-    final response = await _service.client
-        .from('profiles')
-        .select('id')
-        .eq('role', 'worker');
-
-    return (response as List).length;
+  Future<int> getTotalUsersCount() {
+    return _count('profiles', column: 'role', value: 'user');
   }
 
-  Future<int> getTotalBookingsCount() async {
-    final response = await _service.client.from('bookings').select('id');
-
-    return (response as List).length;
+  Future<int> getTotalWorkersCount() {
+    return _count('profiles', column: 'role', value: 'worker');
   }
 
-  Future<int> getPendingBookingsCount() async {
-    final response = await _service.client
-        .from('bookings')
-        .select('id')
-        .eq('status', 'pending');
-
-    return (response as List).length;
+  Future<int> getTotalBookingsCount() {
+    return _count('bookings');
   }
 
-  Future<int> getCompletedBookingsCount() async {
-    final response = await _service.client
-        .from('bookings')
-        .select('id')
-        .eq('status', 'completed');
-
-    return (response as List).length;
+  Future<int> getPendingBookingsCount() {
+    return _count('bookings', column: 'status', value: 'pending');
   }
 
-  Future<int> getIncompleteWorkerProfilesCount() async {
-    final response = await _service.client
-        .from('worker_profiles')
-        .select('id')
-        .eq('is_profile_complete', false);
+  Future<int> getCompletedBookingsCount() {
+    return _count('bookings', column: 'status', value: 'completed');
+  }
 
-    return (response as List).length;
+  Future<int> getIncompleteWorkerProfilesCount() {
+    return _count(
+      'worker_profiles',
+      column: 'is_profile_complete',
+      value: false,
+    );
   }
 
   Future<List<Map<String, dynamic>>> getRecentBookings({int limit = 5}) async {
@@ -112,17 +100,17 @@ class AdminRepository {
     final response = await _service.client
         .from('worker_profiles')
         .select('''
-        id,
-        full_name,
-        phone,
-        category,
-        location,
-        experience_years,
-        skills,
-        rate,
-        availability,
-        is_profile_complete
-      ''')
+          id,
+          full_name,
+          phone,
+          category,
+          location,
+          experience_years,
+          skills,
+          rate,
+          availability,
+          is_profile_complete
+        ''')
         .order('id', ascending: false);
 
     return List<Map<String, dynamic>>.from(response);
@@ -136,39 +124,20 @@ class AdminRepository {
 
     final data = List<Map<String, dynamic>>.from(response);
 
-    double total = 0;
-
-    for (final item in data) {
-      total += (item['amount'] as num?)?.toDouble() ?? 0;
-    }
-
-    return total;
+    return data.fold<double>(0, (total, item) {
+      return total + ((item['amount'] as num?)?.toDouble() ?? 0);
+    });
   }
 
-  Future<int> getActiveSubscriptionsCount() async {
-    final response = await _service.client
-        .from('worker_subscriptions')
-        .select('id')
-        .eq('status', 'active');
-
-    return (response as List).length;
+  Future<int> getActiveSubscriptionsCount() {
+    return _count('worker_subscriptions', column: 'status', value: 'active');
   }
 
-  Future<int> getTrialSubscriptionsCount() async {
-    final response = await _service.client
-        .from('worker_subscriptions')
-        .select('id')
-        .eq('status', 'trial');
-
-    return (response as List).length;
+  Future<int> getTrialSubscriptionsCount() {
+    return _count('worker_subscriptions', column: 'status', value: 'trial');
   }
 
-  Future<int> getExpiredSubscriptionsCount() async {
-    final response = await _service.client
-        .from('worker_subscriptions')
-        .select('id')
-        .eq('status', 'expired');
-
-    return (response as List).length;
+  Future<int> getExpiredSubscriptionsCount() {
+    return _count('worker_subscriptions', column: 'status', value: 'expired');
   }
 }
