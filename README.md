@@ -7,7 +7,7 @@ A Flutter-based mobile application that connects users with local service provid
 ## 📱 Features
 
 - 🔍 Browse local service providers
-- 📅 Book services بسهولة (easy booking)
+- 📅 Book services (easy booking)
 - 💳 Secure payments using Razorpay
 - 👤 User authentication & profiles
 - 📊 Real-time data with Supabase
