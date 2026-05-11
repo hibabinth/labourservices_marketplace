@@ -35,8 +35,9 @@ class AuthViewModel extends ChangeNotifier {
     if (subscription == null) return false;
 
     final status = subscription['status']?.toString().toLowerCase();
-    final endDateText = subscription['end_date']?.toString();
-    final endDate = DateTime.tryParse(endDateText ?? '');
+    final endDate = DateTime.tryParse(
+      subscription['end_date']?.toString() ?? '',
+    );
 
     if (status != 'active') return false;
     if (endDate == null) return false;
@@ -49,21 +50,41 @@ class AuthViewModel extends ChangeNotifier {
     if (subscription == null) return false;
 
     final status = subscription['status']?.toString().toLowerCase();
-    final endDateText = subscription['end_date']?.toString();
-    final endDate = DateTime.tryParse(endDateText ?? '');
+    final endDate = DateTime.tryParse(
+      subscription['end_date']?.toString() ?? '',
+    );
 
     if (endDate == null) return false;
     if (!DateTime.now().isBefore(endDate)) return false;
 
-    return status == 'trial' || status == 'active';
+    if (status == 'active') return true;
+
+    if (status == 'trial') {
+      final used =
+          int.tryParse(
+            subscription['used_trial_bookings']?.toString() ?? '0',
+          ) ??
+          0;
+
+      final limit =
+          int.tryParse(
+            subscription['trial_booking_limit']?.toString() ?? '2',
+          ) ??
+          2;
+
+      return used < limit;
+    }
+
+    return false;
   }
 
   bool get isSubscriptionExpired {
     final subscription = workerSubscriptionData;
     if (subscription == null) return true;
 
-    final endDateText = subscription['end_date']?.toString();
-    final endDate = DateTime.tryParse(endDateText ?? '');
+    final endDate = DateTime.tryParse(
+      subscription['end_date']?.toString() ?? '',
+    );
 
     if (endDate == null) return true;
 
@@ -416,7 +437,6 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = _mapError(e);
       debugPrint('LOAD WORKER SUBSCRIPTION ERROR => $e');
-      debugPrint("SUB DATA => $workerSubscriptionData");
       notifyListeners();
     }
   }
