@@ -103,6 +103,8 @@ class WorkerProfileRepository {
             .add(const Duration(days: 7))
             .toIso8601String(),
         'status': 'trial',
+        'trial_booking_limit': 2,
+        'used_trial_bookings': 0,
       });
     }
   }
@@ -213,6 +215,8 @@ class WorkerProfileRepository {
         status,
         start_date,
         end_date,
+        trial_booking_limit,
+        used_trial_bookings,
         subscription_plans (
           name,
           price,
@@ -247,7 +251,6 @@ class WorkerProfileRepository {
 
     final now = DateTime.now();
 
-    // 1. Save manual payment record for testing
     await _service.client.from('subscription_payments').insert({
       'worker_id': user.id,
       'plan_id': planId,
@@ -256,19 +259,19 @@ class WorkerProfileRepository {
       'payment_id': 'manual_test_payment',
     });
 
-    // 2. Remove old trial/old subscription
     await _service.client
         .from('worker_subscriptions')
         .delete()
         .eq('worker_id', user.id);
 
-    // 3. Add new active subscription
     await _service.client.from('worker_subscriptions').insert({
       'worker_id': user.id,
       'plan_id': planId,
       'start_date': now.toIso8601String(),
       'end_date': now.add(Duration(days: durationDays)).toIso8601String(),
       'status': 'active',
+      'trial_booking_limit': 2,
+      'used_trial_bookings': 0,
     });
   }
 }

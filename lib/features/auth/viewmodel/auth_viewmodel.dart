@@ -416,6 +416,7 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = _mapError(e);
       debugPrint('LOAD WORKER SUBSCRIPTION ERROR => $e');
+      debugPrint("SUB DATA => $workerSubscriptionData");
       notifyListeners();
     }
   }
