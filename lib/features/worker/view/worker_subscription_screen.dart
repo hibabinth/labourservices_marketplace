@@ -14,13 +14,22 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthViewModel>().loadSubscriptionPlans();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final vm = context.read<AuthViewModel>();
+      await vm.loadWorkerSubscription();
+      await vm.loadSubscriptionPlans();
     });
   }
 
   Future<void> _choosePlan(Map<String, dynamic> plan) async {
     final vm = context.read<AuthViewModel>();
+
+    if (vm.hasActiveSubscription) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You already have an active plan')),
+      );
+      return;
+    }
 
     final success = await vm.activateWorkerSubscription(
       planId: plan['id'].toString(),
@@ -34,7 +43,6 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Subscription activated successfully')),
       );
-
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -47,6 +55,7 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<AuthViewModel>();
     final plans = vm.subscriptionPlans;
+    final hasActiveSubscription = vm.hasActiveSubscription;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
@@ -67,10 +76,39 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
             )
           : ListView.separated(
               padding: const EdgeInsets.all(20),
-              itemCount: plans.length,
+              itemCount: plans.length + (hasActiveSubscription ? 1 : 0),
               separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, index) {
-                final plan = plans[index];
+                if (hasActiveSubscription && index == 0) {
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F7EE),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Color(0xFF1E8E5A),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'You already have an active subscription.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1E8E5A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final planIndex = hasActiveSubscription ? index - 1 : index;
+                final plan = plans[planIndex];
 
                 final name = (plan['name'] ?? 'Plan').toString();
                 final description = (plan['description'] ?? 'Subscription plan')
@@ -136,19 +174,23 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: vm.isLoading
+                          onPressed: hasActiveSubscription
                               ? null
                               : () => _choosePlan(plan),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E63F3),
+                            disabledBackgroundColor: const Color(0xFFB9C7E8),
                             foregroundColor: Colors.white,
+                            disabledForegroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Text(
-                            'Choose Plan',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                          child: Text(
+                            hasActiveSubscription
+                                ? 'Already Active'
+                                : 'Choose Plan',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),

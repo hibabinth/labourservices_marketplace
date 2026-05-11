@@ -247,6 +247,7 @@ class WorkerProfileRepository {
 
     final now = DateTime.now();
 
+    // 1. Save manual payment record for testing
     await _service.client.from('subscription_payments').insert({
       'worker_id': user.id,
       'plan_id': planId,
@@ -255,6 +256,13 @@ class WorkerProfileRepository {
       'payment_id': 'manual_test_payment',
     });
 
+    // 2. Remove old trial/old subscription
+    await _service.client
+        .from('worker_subscriptions')
+        .delete()
+        .eq('worker_id', user.id);
+
+    // 3. Add new active subscription
     await _service.client.from('worker_subscriptions').insert({
       'worker_id': user.id,
       'plan_id': planId,
