@@ -29,19 +29,45 @@ class AuthViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> subscriptionPlans = [];
 
   bool get isLoggedIn => authRepository.currentUser != null;
+
   bool get hasActiveSubscription {
     final subscription = workerSubscriptionData;
     if (subscription == null) return false;
 
     final status = subscription['status']?.toString().toLowerCase();
     final endDateText = subscription['end_date']?.toString();
-
     final endDate = DateTime.tryParse(endDateText ?? '');
 
     if (status != 'active') return false;
     if (endDate == null) return false;
 
     return DateTime.now().isBefore(endDate);
+  }
+
+  bool get canUseWorkerFeatures {
+    final subscription = workerSubscriptionData;
+    if (subscription == null) return false;
+
+    final status = subscription['status']?.toString().toLowerCase();
+    final endDateText = subscription['end_date']?.toString();
+    final endDate = DateTime.tryParse(endDateText ?? '');
+
+    if (endDate == null) return false;
+    if (!DateTime.now().isBefore(endDate)) return false;
+
+    return status == 'trial' || status == 'active';
+  }
+
+  bool get isSubscriptionExpired {
+    final subscription = workerSubscriptionData;
+    if (subscription == null) return true;
+
+    final endDateText = subscription['end_date']?.toString();
+    final endDate = DateTime.tryParse(endDateText ?? '');
+
+    if (endDate == null) return true;
+
+    return !DateTime.now().isBefore(endDate);
   }
 
   void _setLoading(bool value) {
