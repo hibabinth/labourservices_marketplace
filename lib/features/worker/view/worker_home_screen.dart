@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../auth/viewmodel/auth_viewmodel.dart';
 import '../viewmodel/worker_home_viewmodel.dart';
 import 'worker_booking_screen.dart';
 
@@ -14,8 +15,14 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkerHomeViewModel>().loadDashboard();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<AuthViewModel>().loadWorkerSubscription();
+
+      if (!mounted) return;
+
+      if (context.read<AuthViewModel>().canUseWorkerFeatures) {
+        await context.read<WorkerHomeViewModel>().loadDashboard();
+      }
     });
   }
 
@@ -30,15 +37,93 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
     return Colors.redAccent;
   }
 
+  Future<void> _refreshDashboard() async {
+    await context.read<AuthViewModel>().loadWorkerSubscription();
+
+    if (!mounted) return;
+
+    if (context.read<AuthViewModel>().canUseWorkerFeatures) {
+      await context.read<WorkerHomeViewModel>().loadDashboard();
+    }
+  }
+
+  Widget _buildSubscriptionRequiredView(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 68, color: Colors.grey),
+              const SizedBox(height: 14),
+              const Text(
+                'Subscription Required',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C274C),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your trial booking limit is completed. Upgrade your plan to continue using worker features.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF7A8599),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton(
+                onPressed: () async {
+                  await Navigator.pushNamed(context, '/worker-subscription');
+
+                  if (!mounted) return;
+
+                  await _refreshDashboard();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E63F3),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 13,
+                  ),
+                ),
+                child: const Text('Upgrade Now'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openBookings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const WorkerBookingScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<WorkerHomeViewModel>();
+    final authVm = context.watch<AuthViewModel>();
+
+    if (!authVm.canUseWorkerFeatures) {
+      return _buildSubscriptionRequiredView(context);
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: vm.loadDashboard,
+          onRefresh: _refreshDashboard,
           child: vm.isLoading
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
@@ -49,14 +134,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                     children: [
                       _HeaderSection(
                         pendingCount: vm.pendingBookings,
-                        onNotificationTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const WorkerBookingScreen(),
-                            ),
-                          );
-                        },
+                        onNotificationTap: () => _openBookings(context),
                       ),
                       const SizedBox(height: 20),
 
@@ -124,14 +202,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                         children: [
                           const _SectionTitle(title: 'Latest Booking Requests'),
                           TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const WorkerBookingScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: () => _openBookings(context),
                             child: const Text('View All'),
                           ),
                         ],
@@ -166,7 +237,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                             subtitle: 'Update worker bio, skills and identity',
                             accent: const Color(0xFF1E63F3),
                             badgeText: 'Important',
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/worker-profile-setup',
+                              );
+                            },
                           ),
                           _QuickActionCard(
                             icon: Icons.category_outlined,
@@ -174,7 +250,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                             subtitle: 'Manage your job category and expertise',
                             accent: const Color(0xFF8E44AD),
                             badgeText: 'Manage',
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.pushNamed(context, '/worker-category');
+                            },
                           ),
                           _QuickActionCard(
                             icon: Icons.schedule_rounded,
@@ -191,14 +269,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                                 'Track requests, working jobs and history',
                             accent: const Color(0xFFFF9800),
                             badgeText: '${vm.pendingBookings} New',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const WorkerBookingScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () => _openBookings(context),
                           ),
                         ],
                       ),
