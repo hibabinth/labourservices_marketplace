@@ -15,15 +15,18 @@ class AuthViewModel extends ChangeNotifier {
     required this.profileRepository,
     required this.workerProfileRepository,
   });
-  Map<String, dynamic>? workerSubscriptionData;
+
+  bool isLoading = false;
+  String? errorMessage;
 
   Map<String, dynamic>? userProfileData;
   String? userProfileImageUrl;
 
-  bool isLoading = false;
-  String? errorMessage;
-  String? profileImageUrl;
   Map<String, dynamic>? workerProfileData;
+  String? profileImageUrl;
+
+  Map<String, dynamic>? workerSubscriptionData;
+  List<Map<String, dynamic>> subscriptionPlans = [];
 
   bool get isLoggedIn => authRepository.currentUser != null;
 
@@ -122,10 +125,8 @@ class AuthViewModel extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final cleanedEmail = email.trim().toLowerCase();
-
       await authRepository.signInWithEmail(
-        email: cleanedEmail,
+        email: email.trim().toLowerCase(),
         password: password,
       );
 
@@ -207,6 +208,13 @@ class AuthViewModel extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
       await authRepository.signOut();
+
+      userProfileData = null;
+      userProfileImageUrl = null;
+      workerProfileData = null;
+      profileImageUrl = null;
+      workerSubscriptionData = null;
+      subscriptionPlans = [];
     } catch (e) {
       _setError(_mapError(e));
     } finally {
@@ -305,6 +313,8 @@ class AuthViewModel extends ChangeNotifier {
         availability: availability,
       );
 
+      await loadWorkerSubscription();
+
       return true;
     } catch (e) {
       _setError(_mapError(e));
@@ -348,11 +358,63 @@ class AuthViewModel extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final data = await workerProfileRepository.getWorkerProfile();
-      workerProfileData = data;
+      workerProfileData = await workerProfileRepository.getWorkerProfile();
       notifyListeners();
     } catch (e) {
       _setError(_mapError(e));
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> loadWorkerSubscription() async {
+    try {
+      workerSubscriptionData = await workerProfileRepository
+          .getCurrentSubscription();
+
+      notifyListeners();
+    } catch (e) {
+      errorMessage = _mapError(e);
+      debugPrint('LOAD WORKER SUBSCRIPTION ERROR => $e');
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadSubscriptionPlans() async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      subscriptionPlans = await workerProfileRepository.getSubscriptionPlans();
+    } catch (e) {
+      _setError(_mapError(e));
+      debugPrint('LOAD SUBSCRIPTION PLANS ERROR => $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> activateWorkerSubscription({
+    required String planId,
+    required num amount,
+    required int durationDays,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      await workerProfileRepository.activateSubscription(
+        planId: planId,
+        amount: amount,
+        durationDays: durationDays,
+      );
+
+      await loadWorkerSubscription();
+      return true;
+    } catch (e) {
+      _setError(_mapError(e));
+      debugPrint('ACTIVATE WORKER SUBSCRIPTION ERROR => $e');
+      return false;
     } finally {
       _setLoading(false);
     }
@@ -396,8 +458,7 @@ class AuthViewModel extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      final data = await profileRepository.getUserProfile();
-      userProfileData = data;
+      userProfileData = await profileRepository.getUserProfile();
       notifyListeners();
     } catch (e) {
       _setError(_mapError(e));
@@ -456,19 +517,6 @@ class AuthViewModel extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
-    }
-  }
-
-  Future<void> loadWorkerSubscription() async {
-    try {
-      workerSubscriptionData = await workerProfileRepository
-          .getCurrentSubscription();
-
-      notifyListeners();
-    } catch (e) {
-      errorMessage = e.toString();
-      debugPrint('LOAD WORKER SUBSCRIPTION ERROR => $e');
-      notifyListeners();
     }
   }
 }
