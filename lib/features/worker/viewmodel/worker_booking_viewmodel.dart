@@ -30,7 +30,7 @@ class WorkerBookingViewModel extends ChangeNotifier {
 
       bookings = await repository.getWorkerBookings(status: selectedStatus);
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = e.toString().replaceAll('Exception: ', '');
       debugPrint('LOAD WORKER BOOKINGS ERROR => $e');
     } finally {
       isLoading = false;
@@ -59,7 +59,7 @@ class WorkerBookingViewModel extends ChangeNotifier {
       await loadWorkerBookings(status: selectedStatus);
       return true;
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = e.toString().replaceAll('Exception: ', '');
       debugPrint('UPDATE WORKER BOOKING STATUS ERROR => $e');
       isLoading = false;
       notifyListeners();

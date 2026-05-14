@@ -19,7 +19,6 @@ class WorkerBookingRepository {
     }
 
     final response = await query.order('created_at', ascending: false);
-
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -27,14 +26,55 @@ class WorkerBookingRepository {
     final user = _service.currentUser;
     if (user == null) throw Exception('Worker not logged in');
 
-    final response = await _service.client
+    return await _service.client
         .from('bookings')
         .select()
         .eq('id', bookingId)
         .eq('worker_id', user.id)
         .maybeSingle();
+  }
 
-    return response;
+  Future<bool> canAcceptBooking() async {
+    final user = _service.currentUser;
+    if (user == null) throw Exception('Worker not logged in');
+
+    final subscription = await _service.client
+        .from('worker_subscriptions')
+        .select('status, used_trial_bookings, trial_booking_limit, end_date')
+        .eq('worker_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (subscription == null) return false;
+
+    final status = subscription['status']?.toString().toLowerCase();
+    final endDate = DateTime.tryParse(
+      subscription['end_date']?.toString() ?? '',
+    );
+
+    if (endDate == null) return false;
+    if (!DateTime.now().isBefore(endDate)) return false;
+
+    if (status == 'active') return true;
+
+    if (status == 'trial') {
+      final used =
+          int.tryParse(
+            subscription['used_trial_bookings']?.toString() ?? '0',
+          ) ??
+          0;
+
+      final limit =
+          int.tryParse(
+            subscription['trial_booking_limit']?.toString() ?? '2',
+          ) ??
+          2;
+
+      return used < limit;
+    }
+
+    return false;
   }
 
   Future<void> incrementTrialBookingUsage() async {
@@ -74,6 +114,14 @@ class WorkerBookingRepository {
   }) async {
     final user = _service.currentUser;
     if (user == null) throw Exception('Worker not logged in');
+
+    if (status == 'accepted') {
+      final canAccept = await canAcceptBooking();
+
+      if (!canAccept) {
+        throw Exception('Trial limit reached. Please subscribe to continue.');
+      }
+    }
 
     final updateData = <String, dynamic>{'status': status};
 
