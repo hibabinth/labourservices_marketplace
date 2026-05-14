@@ -119,14 +119,16 @@ class AdminRepository {
   Future<double> getTotalRevenue() async {
     final response = await _service.client
         .from('subscription_payments')
-        .select('amount')
+        .select('amount, payment_status')
         .eq('payment_status', 'paid');
 
-    final data = List<Map<String, dynamic>>.from(response);
+    double total = 0;
 
-    return data.fold<double>(0, (total, item) {
-      return total + ((item['amount'] as num?)?.toDouble() ?? 0);
-    });
+    for (final item in response) {
+      total += ((item['amount'] as num?)?.toDouble() ?? 0);
+    }
+
+    return total;
   }
 
   Future<int> getActiveSubscriptionsCount() {
