@@ -25,13 +25,8 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<AuthViewModel>().loadWorkerSubscription();
-
       if (!mounted) return;
-
-      final authVm = context.read<AuthViewModel>();
-      if (authVm.canUseWorkerFeatures) {
-        context.read<WorkerBookingViewModel>().loadWorkerBookings();
-      }
+      context.read<WorkerBookingViewModel>().loadWorkerBookings();
     });
   }
 
@@ -67,36 +62,121 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
     }
   }
 
+  Future<void> _openSubscriptionPlans() async {
+    Navigator.pop(context);
+
+    await Navigator.pushNamed(context, '/worker-subscription');
+
+    if (!mounted) return;
+
+    await context.read<AuthViewModel>().loadWorkerSubscription();
+    await context.read<WorkerBookingViewModel>().loadWorkerBookings();
+  }
+
+  void _showSubscriptionRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 72,
+                width: 72,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF4FF),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Color(0xFF1E63F3),
+                  size: 38,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Upgrade Required',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1C274C),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Your free trial booking limit is completed. Choose a subscription plan to continue accepting bookings.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Color(0xFF7A8599),
+                ),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _openSubscriptionPlans,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E63F3),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'View Plans',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Maybe Later'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleAction({
-    required BuildContext context,
     required WorkerBookingViewModel vm,
     required String bookingId,
     required String status,
     required String failMessage,
   }) async {
-    final authVm = context.read<AuthViewModel>();
-
-    if (!authVm.canUseWorkerFeatures) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subscription required to continue')),
-      );
-      return;
-    }
-
     final ok = await vm.updateStatus(bookingId: bookingId, status: status);
 
     if (!mounted) return;
 
     await context.read<AuthViewModel>().loadWorkerSubscription();
 
+    if (!ok) {
+      final error = vm.errorMessage ?? failMessage;
+
+      if (error.toLowerCase().contains('trial limit') ||
+          error.toLowerCase().contains('subscribe')) {
+        _showSubscriptionRequiredDialog();
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Booking updated successfully'
-              : (vm.errorMessage ?? failMessage),
-        ),
-      ),
+      const SnackBar(content: Text('Booking updated successfully')),
     );
   }
 
@@ -147,11 +227,9 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
 
                   await context.read<AuthViewModel>().loadWorkerSubscription();
 
-                  if (context.read<AuthViewModel>().canUseWorkerFeatures) {
-                    await context
-                        .read<WorkerBookingViewModel>()
-                        .loadWorkerBookings();
-                  }
+                  await context
+                      .read<WorkerBookingViewModel>()
+                      .loadWorkerBookings();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1E63F3),
@@ -171,7 +249,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
   }
 
   Widget _buildActionButtons({
-    required BuildContext context,
     required WorkerBookingViewModel vm,
     required String bookingId,
     required String status,
@@ -182,7 +259,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
           Expanded(
             child: ElevatedButton(
               onPressed: () => _handleAction(
-                context: context,
                 vm: vm,
                 bookingId: bookingId,
                 status: 'accepted',
@@ -199,7 +275,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
           Expanded(
             child: ElevatedButton(
               onPressed: () => _handleAction(
-                context: context,
                 vm: vm,
                 bookingId: bookingId,
                 status: 'declined',
@@ -221,7 +296,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () => _handleAction(
-            context: context,
             vm: vm,
             bookingId: bookingId,
             status: 'working',
@@ -241,7 +315,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () => _handleAction(
-            context: context,
             vm: vm,
             bookingId: bookingId,
             status: 'completed',
@@ -333,11 +406,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   await context.read<AuthViewModel>().loadWorkerSubscription();
-
-                  if (!context.read<AuthViewModel>().canUseWorkerFeatures) {
-                    return;
-                  }
-
                   await vm.loadWorkerBookings(status: vm.selectedStatus);
                 },
                 child: vm.isLoading
@@ -444,7 +512,6 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
                                 ),
                                 const SizedBox(height: 14),
                                 _buildActionButtons(
-                                  context: context,
                                   vm: vm,
                                   bookingId: bookingId,
                                   status: status,

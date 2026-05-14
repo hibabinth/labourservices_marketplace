@@ -40,7 +40,7 @@ class WorkerBookingRepository {
 
     final subscription = await _service.client
         .from('worker_subscriptions')
-        .select('status, used_trial_bookings, trial_booking_limit, end_date')
+        .select('status, trial_booking_limit, end_date')
         .eq('worker_id', user.id)
         .order('created_at', ascending: false)
         .limit(1)
@@ -48,7 +48,8 @@ class WorkerBookingRepository {
 
     if (subscription == null) return false;
 
-    final status = subscription['status']?.toString().toLowerCase();
+    final subscriptionStatus = subscription['status']?.toString().toLowerCase();
+
     final endDate = DateTime.tryParse(
       subscription['end_date']?.toString() ?? '',
     );
@@ -56,22 +57,24 @@ class WorkerBookingRepository {
     if (endDate == null) return false;
     if (!DateTime.now().isBefore(endDate)) return false;
 
-    if (status == 'active') return true;
+    if (subscriptionStatus == 'active') return true;
 
-    if (status == 'trial') {
-      final used =
-          int.tryParse(
-            subscription['used_trial_bookings']?.toString() ?? '0',
-          ) ??
-          0;
-
+    if (subscriptionStatus == 'trial') {
       final limit =
           int.tryParse(
             subscription['trial_booking_limit']?.toString() ?? '2',
           ) ??
           2;
 
-      return used < limit;
+      final acceptedBookings = await _service.client
+          .from('bookings')
+          .select('id')
+          .eq('worker_id', user.id)
+          .inFilter('status', ['accepted', 'working', 'completed']);
+
+      final usedCount = (acceptedBookings as List).length;
+
+      return usedCount < limit;
     }
 
     return false;
