@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -10,10 +11,10 @@ android {
     ndkVersion = flutter.ndkVersion
 
     sourceSets {
-    getByName("main") {
-        java.setSrcDirs(listOf("src/main/kotlin"))
+        getByName("main") {
+            java.setSrcDirs(listOf("src/main/java", "src/main/kotlin"))
+        }
     }
-}
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -41,4 +42,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
 }

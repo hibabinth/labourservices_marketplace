@@ -37,6 +37,37 @@ class WorkerBookingRepository {
     return response;
   }
 
+  Future<void> incrementTrialBookingUsage() async {
+    final user = _service.currentUser;
+    if (user == null) throw Exception('Worker not logged in');
+
+    final subscription = await _service.client
+        .from('worker_subscriptions')
+        .select('id, status, used_trial_bookings, trial_booking_limit')
+        .eq('worker_id', user.id)
+        .eq('status', 'trial')
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (subscription == null) return;
+
+    final used =
+        int.tryParse(subscription['used_trial_bookings']?.toString() ?? '0') ??
+        0;
+
+    final limit =
+        int.tryParse(subscription['trial_booking_limit']?.toString() ?? '2') ??
+        2;
+
+    if (used >= limit) return;
+
+    await _service.client
+        .from('worker_subscriptions')
+        .update({'used_trial_bookings': used + 1})
+        .eq('id', subscription['id']);
+  }
+
   Future<void> updateBookingStatus({
     required String bookingId,
     required String status,
@@ -61,6 +92,10 @@ class WorkerBookingRepository {
         .update(updateData)
         .eq('id', bookingId)
         .eq('worker_id', user.id);
+
+    if (status == 'accepted') {
+      await incrementTrialBookingUsage();
+    }
   }
 
   Future<int> getPendingBookingCount() async {

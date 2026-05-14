@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:labour_service/features/worker/viewmodel/worker_booking_viewmodel.dart';
 import 'package:provider/provider.dart';
+import '../../auth/viewmodel/auth_viewmodel.dart';
 
 class WorkerBookingScreen extends StatefulWidget {
   const WorkerBookingScreen({super.key});
@@ -22,8 +23,15 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkerBookingViewModel>().loadWorkerBookings();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<AuthViewModel>().loadWorkerSubscription();
+
+      if (!mounted) return;
+
+      final authVm = context.read<AuthViewModel>();
+      if (authVm.canUseWorkerFeatures) {
+        context.read<WorkerBookingViewModel>().loadWorkerBookings();
+      }
     });
   }
 
@@ -66,9 +74,20 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
     required String status,
     required String failMessage,
   }) async {
+    final authVm = context.read<AuthViewModel>();
+
+    if (!authVm.canUseWorkerFeatures) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subscription required to continue')),
+      );
+      return;
+    }
+
     final ok = await vm.updateStatus(bookingId: bookingId, status: status);
 
     if (!mounted) return;
+
+    await context.read<AuthViewModel>().loadWorkerSubscription();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -76,6 +95,76 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
           ok
               ? 'Booking updated successfully'
               : (vm.errorMessage ?? failMessage),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionRequiredView(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F7FB),
+        elevation: 0,
+        title: const Text(
+          'Worker Bookings',
+          style: TextStyle(color: Color(0xFF1C274C)),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF1C274C)),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 68, color: Colors.grey),
+              const SizedBox(height: 14),
+              const Text(
+                'Subscription Required',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C274C),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your trial booking limit is completed. Upgrade your plan to access bookings again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF7A8599),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton(
+                onPressed: () async {
+                  await Navigator.pushNamed(context, '/worker-subscription');
+                  if (!mounted) return;
+
+                  await context.read<AuthViewModel>().loadWorkerSubscription();
+
+                  if (context.read<AuthViewModel>().canUseWorkerFeatures) {
+                    await context
+                        .read<WorkerBookingViewModel>()
+                        .loadWorkerBookings();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E63F3),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 13,
+                  ),
+                ),
+                child: const Text('Upgrade Now'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -173,6 +262,11 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<WorkerBookingViewModel>();
+    final authVm = context.watch<AuthViewModel>();
+
+    if (!authVm.canUseWorkerFeatures) {
+      return _buildSubscriptionRequiredView(context);
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
@@ -237,8 +331,15 @@ class _WorkerBookingScreenState extends State<WorkerBookingScreen> {
             const SizedBox(height: 12),
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () =>
-                    vm.loadWorkerBookings(status: vm.selectedStatus),
+                onRefresh: () async {
+                  await context.read<AuthViewModel>().loadWorkerSubscription();
+
+                  if (!context.read<AuthViewModel>().canUseWorkerFeatures) {
+                    return;
+                  }
+
+                  await vm.loadWorkerBookings(status: vm.selectedStatus);
+                },
                 child: vm.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : vm.bookings.isEmpty
