@@ -44,6 +44,81 @@ class AdminRepository {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getAllBookings() async {
+    final response = await _service.client
+        .from('bookings')
+        .select('''
+          id,
+          user_id,
+          worker_id,
+          user_name,
+          user_phone,
+          worker_name,
+          worker_phone,
+          worker_category,
+          booking_date,
+          booking_time,
+          booking_address,
+          service_title,
+          service_description,
+          booking_note,
+          urgency,
+          status,
+          payment_method,
+          payment_amount,
+          payment_status,
+          razorpay_payment_id,
+          created_at,
+          accepted_at,
+          started_at,
+          completed_at,
+          declined_at,
+          rating,
+          feedback
+        ''')
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getBookingsByStatus(String status) async {
+    final response = await _service.client
+        .from('bookings')
+        .select('''
+          id,
+          user_id,
+          worker_id,
+          user_name,
+          user_phone,
+          worker_name,
+          worker_phone,
+          worker_category,
+          booking_date,
+          booking_time,
+          booking_address,
+          service_title,
+          service_description,
+          booking_note,
+          urgency,
+          status,
+          payment_method,
+          payment_amount,
+          payment_status,
+          razorpay_payment_id,
+          created_at,
+          accepted_at,
+          started_at,
+          completed_at,
+          declined_at,
+          rating,
+          feedback
+        ''')
+        .eq('status', status)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   Future<List<Map<String, dynamic>>> getRecentBookings({int limit = 5}) async {
     final response = await _service.client
         .from('bookings')
@@ -112,6 +187,65 @@ class AdminRepository {
           is_profile_complete
         ''')
         .order('id', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getSubscriptionsByStatus(
+    String status,
+  ) async {
+    final response = await _service.client
+        .from('worker_subscriptions')
+        .select('''
+          id,
+          worker_id,
+          plan_id,
+          start_date,
+          end_date,
+          status,
+          trial_booking_limit,
+          used_trial_bookings,
+          created_at,
+          worker_profiles (
+            full_name,
+            phone,
+            category,
+            location
+          ),
+          subscription_plans (
+            name,
+            price,
+            duration_days
+          )
+        ''')
+        .eq('status', status)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getSubscriptionPayments() async {
+    final response = await _service.client
+        .from('subscription_payments')
+        .select('''
+          id,
+          worker_id,
+          plan_id,
+          amount,
+          payment_status,
+          payment_id,
+          created_at,
+          worker_profiles (
+            full_name,
+            phone,
+            category
+          ),
+          subscription_plans (
+            name,
+            duration_days
+          )
+        ''')
+        .order('created_at', ascending: false);
 
     return List<Map<String, dynamic>>.from(response);
   }

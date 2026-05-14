@@ -26,6 +26,7 @@ class AdminViewModel extends ChangeNotifier {
 
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> workers = [];
+  List<Map<String, dynamic>> adminBookings = [];
 
   Future<void> loadDashboard() async {
     try {
@@ -101,6 +102,26 @@ class AdminViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('LOAD WORKERS ERROR => $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadAdminBookings({required String status}) async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+
+      if (status == 'all') {
+        adminBookings = await repository.getAllBookings();
+      } else {
+        adminBookings = await repository.getBookingsByStatus(status);
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('LOAD ADMIN BOOKINGS ERROR => $e');
     } finally {
       isLoading = false;
       notifyListeners();
