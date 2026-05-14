@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:labour_service/features/admin/view/admin_booking_screen.dart';
 import 'package:labour_service/features/admin/view/admin_dashboard_screen.dart';
+import 'package:labour_service/features/admin/view/admin_main_screen.dart';
 import 'package:labour_service/features/admin/view/admin_users_screen.dart';
 import 'package:labour_service/features/admin/view/admin_workers_screen.dart';
 import 'package:labour_service/features/user/view/user_bookings_screen.dart';
@@ -51,7 +52,7 @@ class LabrixApp extends StatelessWidget {
         '/user-profile': (_) => const UserProfileScreen(),
         '/user-profile-setup': (_) => const UserProfileSetupScreen(),
 
-        '/admin-home': (_) => const AdminDashboardScreen(),
+        '/admin-home': (_) => const AdminMainScreen(),
         '/admin-bookings': (_) => const AdminBookingsScreen(),
         '/admin-users': (_) => const AdminUsersScreen(),
         '/admin-workers': (_) => const AdminWorkersScreen(),
