@@ -26,6 +26,7 @@ class BookingViewModel extends ChangeNotifier {
     required String urgency,
     required String paymentMethod,
     required double paymentAmount,
+    required String paymentId,
   }) async {
     try {
       isLoading = true;
@@ -48,6 +49,7 @@ class BookingViewModel extends ChangeNotifier {
         urgency: urgency,
         paymentMethod: paymentMethod,
         paymentAmount: paymentAmount,
+        paymentId: paymentId,
       );
 
       return true;

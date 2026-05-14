@@ -21,6 +21,7 @@ class BookingRepository {
     required String urgency,
     required String paymentMethod,
     required double paymentAmount,
+    required String paymentId,
   }) async {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
@@ -43,7 +44,8 @@ class BookingRepository {
       'status': 'pending',
       'payment_method': paymentMethod,
       'payment_amount': paymentAmount,
-      'payment_status': 'unpaid',
+      'payment_status': 'paid',
+      'razorpay_payment_id': paymentId,
     });
   }
 

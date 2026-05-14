@@ -132,6 +132,8 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    final paymentId = paymentResult['payment_id']?.toString() ?? '';
+
     final ok = await bookingVm.createBooking(
       workerId: worker['id'].toString(),
       workerName: (worker['full_name'] ?? 'Unknown Worker').toString(),
@@ -148,6 +150,7 @@ class _BookingScreenState extends State<BookingScreen> {
       urgency: _urgency,
       paymentMethod: 'Razorpay',
       paymentAmount: _paymentAmount,
+      paymentId: paymentId,
     );
 
     if (!mounted) return;
