@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:labour_service/features/auth/viewmodel/auth_viewmodel.dart';
+import 'package:labour_service/features/user/view/payment_screen.dart';
 import 'package:labour_service/features/user/viewmodel/booking_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -22,7 +23,6 @@ class _BookingScreenState extends State<BookingScreen> {
   TimeOfDay? _selectedTime;
 
   String _urgency = 'Normal';
-  String _paymentMethod = 'Cash';
   double _paymentAmount = 0;
 
   @override
@@ -84,6 +84,13 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    if (_paymentAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid worker rate/payment amount')),
+      );
+      return;
+    }
+
     final userVm = context.read<AuthViewModel>();
     final bookingVm = context.read<BookingViewModel>();
     final worker = widget.worker;
@@ -96,6 +103,30 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please complete your profile before booking'),
+        ),
+      );
+      return;
+    }
+
+    final paymentResult = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          amount: _paymentAmount,
+          name: userName,
+          phone: userPhone,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (paymentResult == null || paymentResult['status'] != 'paid') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            paymentResult?['message'] ?? 'Payment failed or cancelled',
+          ),
         ),
       );
       return;
@@ -115,14 +146,13 @@ class _BookingScreenState extends State<BookingScreen> {
       serviceDescription: _descriptionController.text.trim(),
       bookingNote: _noteController.text.trim(),
       urgency: _urgency,
-      paymentMethod: _paymentMethod,
+      paymentMethod: 'Razorpay',
       paymentAmount: _paymentAmount,
     );
 
     if (!mounted) return;
 
     if (ok) {
-      // ✅ FIXED NAVIGATION (go to bookings screen)
       Navigator.pushNamedAndRemoveUntil(
         context,
         '/user-bookings',
@@ -177,6 +207,15 @@ class _BookingScreenState extends State<BookingScreen> {
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF7A8599),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Payment: ₹${_paymentAmount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E63F3),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -255,20 +294,28 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
 
-                DropdownButtonFormField<String>(
-                  value: _paymentMethod,
-                  items: const [
-                    DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                    DropdownMenuItem(value: 'UPI', child: Text('UPI')),
-                  ],
-                  onChanged: (v) => setState(() => _paymentMethod = v!),
-                  decoration: InputDecoration(
-                    labelText: 'Payment Method',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF1FF),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: Color(0xFF1E63F3)),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Full online payment is required before booking confirmation.',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1C274C),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -280,7 +327,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     onPressed: bookingVm.isLoading ? null : _submit,
                     child: bookingVm.isLoading
                         ? const CircularProgressIndicator()
-                        : const Text('Confirm Booking'),
+                        : const Text('Pay & Confirm Booking'),
                   ),
                 ),
               ],
