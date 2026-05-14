@@ -459,6 +459,7 @@ class AuthViewModel extends ChangeNotifier {
     required String planId,
     required num amount,
     required int durationDays,
+    required String paymentId,
   }) async {
     try {
       _setLoading(true);
@@ -468,6 +469,7 @@ class AuthViewModel extends ChangeNotifier {
         planId: planId,
         amount: amount,
         durationDays: durationDays,
+        paymentId: paymentId,
       );
 
       await loadWorkerSubscription();
