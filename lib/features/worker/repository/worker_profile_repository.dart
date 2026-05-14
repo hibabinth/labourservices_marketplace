@@ -245,6 +245,7 @@ class WorkerProfileRepository {
     required String planId,
     required num amount,
     required int durationDays,
+    required String paymentId,
   }) async {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
@@ -256,7 +257,7 @@ class WorkerProfileRepository {
       'plan_id': planId,
       'amount': amount,
       'payment_status': 'paid',
-      'payment_id': 'manual_test_payment',
+      'payment_id': paymentId,
     });
 
     await _service.client
