@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:labour_service/features/user/view/payment_screen.dart';
 import 'package:provider/provider.dart';
 import '../../auth/viewmodel/auth_viewmodel.dart';
 
@@ -31,10 +32,34 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
       return;
     }
 
+    final amount = (plan['price'] as num).toDouble();
+
+    final paymentResult = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            PaymentScreen(amount: amount, name: 'Labrix Worker', phone: ''),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (paymentResult == null || paymentResult['status'] != 'paid') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            paymentResult?['message'] ?? 'Payment failed or cancelled',
+          ),
+        ),
+      );
+      return;
+    }
+
     final success = await vm.activateWorkerSubscription(
       planId: plan['id'].toString(),
       amount: plan['price'] as num,
       durationDays: plan['duration_days'] as int,
+      paymentId: paymentResult['payment_id']?.toString() ?? '',
     );
 
     if (!mounted) return;
@@ -189,7 +214,7 @@ class _WorkerSubscriptionScreenState extends State<WorkerSubscriptionScreen> {
                           child: Text(
                             hasActiveSubscription
                                 ? 'Already Active'
-                                : 'Choose Plan',
+                                : 'Pay & Activate Plan',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
