@@ -173,13 +173,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             _DashboardActionCard(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Admin bookings screen not added yet'),
-                  ),
-                );
-              },
+              onTap: () => Navigator.pushNamed(context, '/admin-bookings'),
               child: _StatCard(
                 title: 'Bookings',
                 value: vm.totalBookings.toString(),

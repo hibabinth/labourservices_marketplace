@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:labour_service/features/admin/view/admin_booking_screen.dart';
 import 'package:labour_service/features/admin/view/admin_dashboard_screen.dart';
 import 'package:labour_service/features/admin/view/admin_users_screen.dart';
 import 'package:labour_service/features/admin/view/admin_workers_screen.dart';
@@ -11,6 +12,7 @@ import 'package:labour_service/features/worker/view/worker_main_screen.dart';
 import 'package:labour_service/features/worker/view/worker_category_screen.dart';
 import 'package:labour_service/features/worker/view/worker_profile_setup_screen.dart';
 import 'package:labour_service/features/worker/view/worker_subscription_screen.dart';
+
 import '../features/auth/view/auth_gate_screen.dart';
 import '../features/auth/view/forgot_password_screen.dart';
 import '../features/auth/view/login_screen.dart';
@@ -36,21 +38,26 @@ class LabrixApp extends StatelessWidget {
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/phone-login': (_) => const PhoneLoginScreen(),
         '/role-selection': (_) => const RoleSelectionScreen(),
+
         '/worker-category': (_) => const WorkerCategoryScreen(),
         '/worker-profile-setup': (_) => const WorkerProfileSetupScreen(),
         '/worker-home': (_) => const WorkerMainScreen(),
+        '/worker-subscription': (_) => const WorkerSubscriptionScreen(),
+
         '/user-home': (_) => const UserMainScreen(),
         '/user-main': (_) => const UserMainScreen(),
         '/user-search': (_) => const UserSearchScreen(),
         '/user-bookings': (_) => const UserBookingsScreen(),
         '/user-profile': (_) => const UserProfileScreen(),
         '/user-profile-setup': (_) => const UserProfileSetupScreen(),
+
         '/admin-home': (_) => const AdminDashboardScreen(),
+        '/admin-bookings': (_) => const AdminBookingsScreen(),
+        '/admin-users': (_) => const AdminUsersScreen(),
+        '/admin-workers': (_) => const AdminWorkersScreen(),
+
         '/super-admin-home': (_) =>
             const PlaceholderScreen(title: 'Super Admin Home'),
-        '/admin-users': (_) => AdminUsersScreen(),
-        '/admin-workers': (_) => AdminWorkersScreen(),
-        '/worker-subscription': (context) => const WorkerSubscriptionScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/otp') {
@@ -82,6 +89,7 @@ class LabrixApp extends StatelessWidget {
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;
+
   const PlaceholderScreen({super.key, required this.title});
 
   @override
