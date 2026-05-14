@@ -28,6 +28,11 @@ class AdminViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> workers = [];
   List<Map<String, dynamic>> adminBookings = [];
 
+  List<Map<String, dynamic>> activePlans = [];
+  List<Map<String, dynamic>> trialWorkers = [];
+  List<Map<String, dynamic>> expiredPlans = [];
+  List<Map<String, dynamic>> subscriptionPayments = [];
+
   Future<void> loadDashboard() async {
     try {
       isLoading = true;
@@ -122,6 +127,32 @@ class AdminViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('LOAD ADMIN BOOKINGS ERROR => $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadAdminPlans() async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+
+      final results = await Future.wait([
+        repository.getSubscriptionsByStatus('active'),
+        repository.getSubscriptionsByStatus('trial'),
+        repository.getSubscriptionsByStatus('expired'),
+        repository.getSubscriptionPayments(),
+      ]);
+
+      activePlans = results[0];
+      trialWorkers = results[1];
+      expiredPlans = results[2];
+      subscriptionPayments = results[3];
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('LOAD ADMIN PLANS ERROR => $e');
     } finally {
       isLoading = false;
       notifyListeners();
