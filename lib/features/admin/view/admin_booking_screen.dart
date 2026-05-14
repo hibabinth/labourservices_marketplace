@@ -11,7 +11,6 @@ class AdminBookingsScreen extends StatefulWidget {
 
 class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
   static const Color orange = Color(0xFFFF7A1A);
-  static const Color lightOrange = Color(0xFFFFE8D6);
   static const Color bg = Color(0xFFFFF8F2);
   static const Color dark = Color(0xFF1C274C);
   static const Color muted = Color(0xFF7A8599);
