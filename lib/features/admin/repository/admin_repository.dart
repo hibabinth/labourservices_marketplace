@@ -276,4 +276,29 @@ class AdminRepository {
   Future<int> getExpiredSubscriptionsCount() {
     return _count('worker_subscriptions', column: 'status', value: 'expired');
   }
+
+  Future<void> deleteUser(String userId) async {
+    await _service.client.from('profiles').delete().eq('id', userId);
+  }
+
+  Future<void> deleteWorker(String workerId) async {
+    await _service.client
+        .from('subscription_payments')
+        .delete()
+        .eq('worker_id', workerId);
+
+    await _service.client
+        .from('worker_subscriptions')
+        .delete()
+        .eq('worker_id', workerId);
+
+    await _service.client
+        .from('worker_reviews')
+        .delete()
+        .eq('worker_id', workerId);
+
+    await _service.client.from('worker_profiles').delete().eq('id', workerId);
+
+    await _service.client.from('profiles').delete().eq('id', workerId);
+  }
 }

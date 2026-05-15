@@ -158,4 +158,48 @@ class AdminViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> deleteUser(String userId) async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+
+      await repository.deleteUser(userId);
+
+      users.removeWhere((user) => user['id']?.toString() == userId);
+
+      await loadDashboard();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('DELETE USER ERROR => $e');
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteWorker(String workerId) async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+
+      await repository.deleteWorker(workerId);
+
+      workers.removeWhere((worker) => worker['id']?.toString() == workerId);
+
+      await loadDashboard();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('DELETE WORKER ERROR => $e');
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }
