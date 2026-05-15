@@ -9,57 +9,60 @@ class ServiceRepository {
   SupabaseClient get _client => supabaseService.client;
 
   Future<List<Map<String, dynamic>>> getTopWorkers() async {
-    final response = await _client
-        .from('worker_profiles')
-        .select('''
-          id,
-          category,
-          bio,
-          location,
-          experience_years,
-          full_name,
-          phone,
-          skills,
-          rate,
-          availability,
-          is_profile_complete
-        ''')
-        .eq('is_profile_complete', true)
-        .limit(10);
+    final workers = await _getCompleteWorkers(limit: 20);
 
-    final workers = List<Map<String, dynamic>>.from(response);
+    workers.sort((a, b) {
+      final bRating = ((b['average_rating'] as num?) ?? 0).toDouble();
+      final aRating = ((a['average_rating'] as num?) ?? 0).toDouble();
+      return bRating.compareTo(aRating);
+    });
 
-    for (final worker in workers) {
-      await _attachWorkerExtraData(worker);
-    }
+    return workers.take(10).toList();
+  }
 
-    return workers;
+  Future<List<Map<String, dynamic>>> getTopRatedWorkers() async {
+    final workers = await _getCompleteWorkers(limit: 30);
+
+    workers.sort((a, b) {
+      final bRating = ((b['average_rating'] as num?) ?? 0).toDouble();
+      final aRating = ((a['average_rating'] as num?) ?? 0).toDouble();
+
+      if (bRating == aRating) {
+        final bReviews = ((b['total_reviews'] as num?) ?? 0).toInt();
+        final aReviews = ((a['total_reviews'] as num?) ?? 0).toInt();
+        return bReviews.compareTo(aReviews);
+      }
+
+      return bRating.compareTo(aRating);
+    });
+
+    return workers.take(10).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getPopularWorkers() async {
+    final workers = await _getCompleteWorkers(limit: 30);
+
+    workers.sort((a, b) {
+      final bReviews = ((b['total_reviews'] as num?) ?? 0).toInt();
+      final aReviews = ((a['total_reviews'] as num?) ?? 0).toInt();
+
+      if (bReviews == aReviews) {
+        final bRating = ((b['average_rating'] as num?) ?? 0).toDouble();
+        final aRating = ((a['average_rating'] as num?) ?? 0).toDouble();
+        return bRating.compareTo(aRating);
+      }
+
+      return bReviews.compareTo(aReviews);
+    });
+
+    return workers.take(10).toList();
   }
 
   Future<List<Map<String, dynamic>>> searchWorkers({
     String? searchText,
     String? category,
   }) async {
-    final response = await _client
-        .from('worker_profiles')
-        .select('''
-          id,
-          category,
-          bio,
-          location,
-          experience_years,
-          full_name,
-          phone,
-          skills,
-          rate,
-          availability,
-          is_profile_complete
-        ''')
-        .eq('is_profile_complete', true);
-
-    List<Map<String, dynamic>> workers = List<Map<String, dynamic>>.from(
-      response,
-    );
+    List<Map<String, dynamic>> workers = await _getCompleteWorkers();
 
     if (category != null && category.isNotEmpty) {
       workers = workers.where((worker) {
@@ -88,10 +91,6 @@ class ServiceRepository {
             skills.contains(query) ||
             phone.contains(query);
       }).toList();
-    }
-
-    for (final worker in workers) {
-      await _attachWorkerExtraData(worker);
     }
 
     return workers;
@@ -186,6 +185,37 @@ class ServiceRepository {
       'average_rating': total / reviews.length,
       'total_reviews': reviews.length,
     };
+  }
+
+  Future<List<Map<String, dynamic>>> _getCompleteWorkers({int? limit}) async {
+    final baseQuery = _client
+        .from('worker_profiles')
+        .select('''
+        id,
+        category,
+        bio,
+        location,
+        experience_years,
+        full_name,
+        phone,
+        skills,
+        rate,
+        availability,
+        is_profile_complete
+      ''')
+        .eq('is_profile_complete', true);
+
+    final response = limit == null
+        ? await baseQuery
+        : await baseQuery.limit(limit);
+
+    final workers = List<Map<String, dynamic>>.from(response);
+
+    for (final worker in workers) {
+      await _attachWorkerExtraData(worker);
+    }
+
+    return workers;
   }
 
   Future<void> _attachWorkerExtraData(Map<String, dynamic> worker) async {
