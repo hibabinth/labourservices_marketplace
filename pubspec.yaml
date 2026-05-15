@@ -44,6 +44,8 @@ dependencies:
   path: ^1.9.1
   shared_preferences: ^2.5.5
   razorpay_flutter: ^1.4.5
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
   
 
 dev_dependencies:

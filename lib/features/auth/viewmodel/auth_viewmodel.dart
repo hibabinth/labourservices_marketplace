@@ -487,6 +487,8 @@ class AuthViewModel extends ChangeNotifier {
     required String fullName,
     required String phone,
     required String location,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       _setLoading(true);
@@ -496,6 +498,8 @@ class AuthViewModel extends ChangeNotifier {
         fullName: fullName,
         phone: phone,
         location: location,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       return true;
@@ -563,6 +567,8 @@ class AuthViewModel extends ChangeNotifier {
     required String fullName,
     required String phone,
     required String location,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       _setLoading(true);
@@ -572,6 +578,8 @@ class AuthViewModel extends ChangeNotifier {
         fullName: fullName,
         phone: phone,
         location: location,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       return true;

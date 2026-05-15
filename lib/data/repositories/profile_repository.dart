@@ -25,16 +25,11 @@ class ProfileRepository {
       return null;
     }
 
-    debugPrint('GET ROLE USER ID => ${user.id}');
-    debugPrint('GET ROLE USER EMAIL => ${user.email}');
-
     final data = await _service.client
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
-
-    debugPrint('GET ROLE DB RESPONSE => $data');
 
     return data?['role'] as String?;
   }
@@ -43,6 +38,8 @@ class ProfileRepository {
     required String fullName,
     required String phone,
     required String location,
+    double? latitude,
+    double? longitude,
   }) async {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
@@ -52,6 +49,8 @@ class ProfileRepository {
       'full_name': fullName,
       'phone': phone,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'is_profile_complete': true,
     });
   }
@@ -79,7 +78,7 @@ class ProfileRepository {
     return await _service.client
         .from('profiles')
         .select(
-          'full_name, phone, location, avatar_url, role, is_profile_complete',
+          'full_name, phone, location, latitude, longitude, avatar_url, role, is_profile_complete',
         )
         .eq('id', user.id)
         .maybeSingle();
@@ -98,9 +97,7 @@ class ProfileRepository {
     final storedValue = data?['avatar_url'] as String?;
     if (storedValue == null || storedValue.isEmpty) return null;
 
-    if (storedValue.startsWith('http')) {
-      return storedValue;
-    }
+    if (storedValue.startsWith('http')) return storedValue;
 
     return _service.client.storage
         .from('user-profile-images')
@@ -116,49 +113,39 @@ class ProfileRepository {
         '${user.id}_${DateTime.now().millisecondsSinceEpoch}$fileExt';
     final filePath = 'avatars/$fileName';
 
-    try {
-      print('Uploading to bucket: user-profile-images');
-      print('Uploading filePath: $filePath');
-      print('Local file exists: ${file.existsSync()}');
-      print('Current user id: ${user.id}');
+    await _service.client.storage
+        .from('user-profile-images')
+        .upload(filePath, file, fileOptions: const FileOptions(upsert: true));
 
-      await _service.client.storage
-          .from('user-profile-images')
-          .upload(filePath, file, fileOptions: const FileOptions(upsert: true));
+    await _service.client
+        .from('profiles')
+        .update({'avatar_url': filePath})
+        .eq('id', user.id);
 
-      print('Upload success');
-
-      await _service.client
-          .from('profiles')
-          .update({'avatar_url': filePath})
-          .eq('id', user.id);
-
-      print('Profile avatar_url updated in DB: $filePath');
-
-      final publicUrl = _service.client.storage
-          .from('user-profile-images')
-          .getPublicUrl(filePath);
-
-      print('Public URL: $publicUrl');
-
-      return publicUrl;
-    } catch (e) {
-      print('UPLOAD USER PROFILE IMAGE ERROR => $e');
-      rethrow;
-    }
+    return _service.client.storage
+        .from('user-profile-images')
+        .getPublicUrl(filePath);
   }
 
   Future<void> updateUserProfile({
     required String fullName,
     required String phone,
     required String location,
+    double? latitude,
+    double? longitude,
   }) async {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
 
     await _service.client
         .from('profiles')
-        .update({'full_name': fullName, 'phone': phone, 'location': location})
+        .update({
+          'full_name': fullName,
+          'phone': phone,
+          'location': location,
+          'latitude': latitude,
+          'longitude': longitude,
+        })
         .eq('id', user.id);
   }
 }
