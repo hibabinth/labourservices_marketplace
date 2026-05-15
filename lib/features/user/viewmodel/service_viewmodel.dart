@@ -11,7 +11,10 @@ class ServiceViewModel extends ChangeNotifier {
 
   List<Map<String, dynamic>> topWorkers = [];
   List<Map<String, dynamic>> searchResults = [];
+  List<Map<String, dynamic>> workerReviews = [];
+
   Map<String, dynamic>? selectedWorker;
+  Map<String, dynamic>? workerRatingSummary;
 
   Future<void> loadTopWorkers() async {
     try {
@@ -55,7 +58,15 @@ class ServiceViewModel extends ChangeNotifier {
       errorMessage = null;
       notifyListeners();
 
-      selectedWorker = await repository.getWorkerById(workerId);
+      final results = await Future.wait([
+        repository.getWorkerById(workerId),
+        repository.getWorkerReviews(workerId),
+        repository.getWorkerRatingSummary(workerId),
+      ]);
+
+      selectedWorker = results[0] as Map<String, dynamic>?;
+      workerReviews = results[1] as List<Map<String, dynamic>>;
+      workerRatingSummary = results[2] as Map<String, dynamic>;
     } catch (e) {
       errorMessage = e.toString();
       debugPrint('LOAD WORKER DETAILS ERROR => $e');
@@ -67,6 +78,8 @@ class ServiceViewModel extends ChangeNotifier {
 
   void clearSelectedWorker() {
     selectedWorker = null;
+    workerReviews = [];
+    workerRatingSummary = null;
     notifyListeners();
   }
 }
