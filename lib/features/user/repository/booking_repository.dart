@@ -70,11 +70,36 @@ class BookingRepository {
     final user = _service.currentUser;
     if (user == null) throw Exception('User not logged in');
 
+    final booking = await _service.client
+        .from('bookings')
+        .select('id, worker_id, user_id, status')
+        .eq('id', bookingId)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .maybeSingle();
+
+    if (booking == null) {
+      throw Exception('You can review only completed bookings');
+    }
+
+    final workerId = booking['worker_id']?.toString();
+    if (workerId == null || workerId.isEmpty) {
+      throw Exception('Worker not found for this booking');
+    }
+
     await _service.client
         .from('bookings')
         .update({'rating': rating, 'feedback': feedback})
         .eq('id', bookingId)
         .eq('user_id', user.id)
         .eq('status', 'completed');
+
+    await _service.client.from('worker_reviews').upsert({
+      'booking_id': bookingId,
+      'worker_id': workerId,
+      'user_id': user.id,
+      'rating': rating,
+      'feedback': feedback,
+    }, onConflict: 'booking_id');
   }
 }
