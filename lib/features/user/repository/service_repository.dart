@@ -30,28 +30,7 @@ class ServiceRepository {
     final workers = List<Map<String, dynamic>>.from(response);
 
     for (final worker in workers) {
-      final workerId = worker['id']?.toString();
-      if (workerId == null || workerId.isEmpty) {
-        worker['avatar_url'] = null;
-        continue;
-      }
-
-      final profile = await _client
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', workerId)
-          .maybeSingle();
-
-      String? avatarUrl = profile?['avatar_url'] as String?;
-      if (avatarUrl != null &&
-          avatarUrl.isNotEmpty &&
-          !avatarUrl.startsWith('http')) {
-        avatarUrl = _client.storage
-            .from('worker-profile-images')
-            .getPublicUrl(avatarUrl);
-      }
-
-      worker['avatar_url'] = avatarUrl;
+      await _attachWorkerExtraData(worker);
     }
 
     return workers;
@@ -112,28 +91,7 @@ class ServiceRepository {
     }
 
     for (final worker in workers) {
-      final workerId = worker['id']?.toString();
-      if (workerId == null || workerId.isEmpty) {
-        worker['avatar_url'] = null;
-        continue;
-      }
-
-      final profile = await _client
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', workerId)
-          .maybeSingle();
-
-      String? avatarUrl = profile?['avatar_url'] as String?;
-      if (avatarUrl != null &&
-          avatarUrl.isNotEmpty &&
-          !avatarUrl.startsWith('http')) {
-        avatarUrl = _client.storage
-            .from('worker-profile-images')
-            .getPublicUrl(avatarUrl);
-      }
-
-      worker['avatar_url'] = avatarUrl;
+      await _attachWorkerExtraData(worker);
     }
 
     return workers;
@@ -160,6 +118,86 @@ class ServiceRepository {
 
     if (workerProfile == null) return null;
 
+    final worker = Map<String, dynamic>.from(workerProfile);
+    await _attachWorkerExtraData(worker);
+
+    return worker;
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkerReviews(String workerId) async {
+    final response = await _client
+        .from('worker_reviews')
+        .select('''
+          id,
+          booking_id,
+          worker_id,
+          user_id,
+          rating,
+          feedback,
+          created_at,
+          profiles (
+            full_name,
+            avatar_url
+          )
+        ''')
+        .eq('worker_id', workerId)
+        .order('created_at', ascending: false);
+
+    final reviews = List<Map<String, dynamic>>.from(response);
+
+    for (final review in reviews) {
+      final profile = review['profiles'] as Map<String, dynamic>?;
+      String? avatarUrl = profile?['avatar_url'] as String?;
+
+      if (avatarUrl != null &&
+          avatarUrl.isNotEmpty &&
+          !avatarUrl.startsWith('http')) {
+        avatarUrl = _client.storage
+            .from('user-profile-images')
+            .getPublicUrl(avatarUrl);
+      }
+
+      review['user_avatar_url'] = avatarUrl;
+      review['user_name'] = profile?['full_name'];
+    }
+
+    return reviews;
+  }
+
+  Future<Map<String, dynamic>> getWorkerRatingSummary(String workerId) async {
+    final response = await _client
+        .from('worker_reviews')
+        .select('rating')
+        .eq('worker_id', workerId);
+
+    final reviews = List<Map<String, dynamic>>.from(response);
+
+    if (reviews.isEmpty) {
+      return {'average_rating': 0.0, 'total_reviews': 0};
+    }
+
+    double total = 0;
+
+    for (final review in reviews) {
+      total += ((review['rating'] as num?)?.toDouble() ?? 0);
+    }
+
+    return {
+      'average_rating': total / reviews.length,
+      'total_reviews': reviews.length,
+    };
+  }
+
+  Future<void> _attachWorkerExtraData(Map<String, dynamic> worker) async {
+    final workerId = worker['id']?.toString();
+
+    if (workerId == null || workerId.isEmpty) {
+      worker['avatar_url'] = null;
+      worker['average_rating'] = 0.0;
+      worker['total_reviews'] = 0;
+      return;
+    }
+
     final profile = await _client
         .from('profiles')
         .select('avatar_url')
@@ -167,6 +205,7 @@ class ServiceRepository {
         .maybeSingle();
 
     String? avatarUrl = profile?['avatar_url'] as String?;
+
     if (avatarUrl != null &&
         avatarUrl.isNotEmpty &&
         !avatarUrl.startsWith('http')) {
@@ -175,6 +214,10 @@ class ServiceRepository {
           .getPublicUrl(avatarUrl);
     }
 
-    return {...workerProfile, 'avatar_url': avatarUrl};
+    final ratingSummary = await getWorkerRatingSummary(workerId);
+
+    worker['avatar_url'] = avatarUrl;
+    worker['average_rating'] = ratingSummary['average_rating'];
+    worker['total_reviews'] = ratingSummary['total_reviews'];
   }
 }
