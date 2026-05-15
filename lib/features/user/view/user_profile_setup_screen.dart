@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:labour_service/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +20,13 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
   final _locationController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
+
   File? _selectedImage;
   bool _isPrefilled = false;
+  bool _isGettingLocation = false;
+
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
@@ -36,10 +43,11 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       _phoneController.text = data['phone']?.toString() ?? '';
       _locationController.text = data['location']?.toString() ?? '';
 
+      _latitude = (data['latitude'] as num?)?.toDouble();
+      _longitude = (data['longitude'] as num?)?.toDouble();
+
       if (!mounted) return;
-      setState(() {
-        _isPrefilled = true;
-      });
+      setState(() => _isPrefilled = true);
     });
   }
 
@@ -51,19 +59,92 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
     super.dispose();
   }
 
+  Future<void> _getCurrentLocation() async {
+    try {
+      setState(() => _isGettingLocation = true);
+
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Please enable location services');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permission denied');
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception(
+          'Location permission permanently denied. Enable it from app settings.',
+        );
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      String address = 'Lat: ${position.latitude}, Lng: ${position.longitude}';
+
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          final parts = [
+            place.street,
+            place.locality,
+            place.administrativeArea,
+            place.country,
+          ].where((e) => e != null && e.trim().isNotEmpty).toList();
+
+          if (parts.isNotEmpty) {
+            address = parts.join(', ');
+          }
+        }
+      } catch (_) {}
+
+      if (!mounted) return;
+
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        _locationController.text = address;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location selected successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
   Future<void> _pickImageFrom(ImageSource source) async {
     Navigator.pop(context);
 
     final image = await _picker.pickImage(source: source, imageQuality: 75);
-
     if (image == null) return;
 
     final file = File(image.path);
 
     if (!mounted) return;
-    setState(() {
-      _selectedImage = file;
-    });
+    setState(() => _selectedImage = file);
 
     final vm = context.read<AuthViewModel>();
     final ok = await vm.uploadUserProfileImage(file);
@@ -78,9 +159,7 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
         const SnackBar(content: Text('Profile photo updated successfully')),
       );
     } else {
-      setState(() {
-        _selectedImage = null;
-      });
+      setState(() => _selectedImage = null);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(vm.errorMessage ?? 'Failed to upload image')),
@@ -163,6 +242,8 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       fullName: fullName,
       phone: phone,
       location: location,
+      latitude: _latitude,
+      longitude: _longitude,
     );
 
     if (!mounted) return;
@@ -314,6 +395,43 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
                   label: 'Location',
                   icon: Icons.location_on_outlined,
                 ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isGettingLocation ? null : _getCurrentLocation,
+                    icon: _isGettingLocation
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location),
+                    label: Text(
+                      _isGettingLocation
+                          ? 'Getting location...'
+                          : 'Use Current Location',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E63F3),
+                      side: const BorderSide(color: Color(0xFF1E63F3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                if (_latitude != null && _longitude != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selected: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF7A8599),
+                    ),
+                  ),
+                ],
                 if (vm.errorMessage != null &&
                     vm.errorMessage!.trim().isNotEmpty) ...[
                   const SizedBox(height: 16),
