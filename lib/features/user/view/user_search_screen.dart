@@ -54,6 +54,14 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
         .join(' ');
   }
 
+  double _rating(Map<String, dynamic> worker) {
+    return ((worker['average_rating'] as num?) ?? 0).toDouble();
+  }
+
+  int _reviewCount(Map<String, dynamic> worker) {
+    return ((worker['total_reviews'] as num?) ?? 0).toInt();
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ServiceViewModel>();
@@ -169,90 +177,28 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                                     .toString();
                             final rate = (worker['rate'] ?? 'N/A').toString();
                             final workerId = worker['id'].toString();
+                            final avatarUrl = (worker['avatar_url'] ?? '')
+                                .toString();
+                            final rating = _rating(worker);
+                            final reviews = _reviewCount(worker);
 
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.04),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                            return _WorkerSearchCard(
+                              name: name,
+                              category: category,
+                              location: location,
+                              rate: rate,
+                              avatarUrl: avatarUrl,
+                              rating: rating,
+                              reviews: reviews,
+                              onView: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        WorkerDetailsScreen(workerId: workerId),
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEAF1FF),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      color: Color(0xFF1E63F3),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          name,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFF1C274C),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '$category • $location',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color: Color(0xFF7A8599),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '₹$rate',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF1E63F3),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => WorkerDetailsScreen(
-                                            workerId: workerId,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1E63F3),
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    child: const Text('View'),
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             );
                           },
                         ),
@@ -261,6 +207,142 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _WorkerSearchCard extends StatelessWidget {
+  final String name;
+  final String category;
+  final String location;
+  final String rate;
+  final String avatarUrl;
+  final double rating;
+  final int reviews;
+  final VoidCallback onView;
+
+  const _WorkerSearchCard({
+    required this.name,
+    required this.category,
+    required this.location,
+    required this.rate,
+    required this.avatarUrl,
+    required this.rating,
+    required this.reviews,
+    required this.onView,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = avatarUrl.startsWith('http');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF1FF),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: hasImage
+                  ? Image.network(
+                      avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.person, color: Color(0xFF1E63F3)),
+                    )
+                  : const Icon(Icons.person, color: Color(0xFF1E63F3)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1C274C),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$category • $location',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF7A8599),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1C274C),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '($reviews)',
+                      style: const TextStyle(
+                        color: Color(0xFF7A8599),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '₹$rate',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E63F3),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: onView,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E63F3),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text('View'),
+          ),
+        ],
       ),
     );
   }
