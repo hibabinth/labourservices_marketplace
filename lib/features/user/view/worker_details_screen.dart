@@ -72,6 +72,12 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<ServiceViewModel>();
     final worker = vm.selectedWorker;
+    final summary = vm.workerRatingSummary;
+    final reviews = vm.workerReviews;
+
+    final averageRating = ((summary?['average_rating'] as num?) ?? 0)
+        .toDouble();
+    final totalReviews = ((summary?['total_reviews'] as num?) ?? 0).toInt();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -113,6 +119,8 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
                       availabilityColor: _availabilityColor(
                         (worker['availability'] ?? 'Unavailable').toString(),
                       ),
+                      averageRating: averageRating,
+                      totalReviews: totalReviews,
                     ),
                     const SizedBox(height: 18),
 
@@ -172,6 +180,45 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
                             color: Color(0xFF53627C),
                           ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _DetailsSectionCard(
+                      title: 'Ratings & Reviews',
+                      children: [
+                        _RatingSummary(
+                          averageRating: averageRating,
+                          totalReviews: totalReviews,
+                        ),
+                        const SizedBox(height: 14),
+                        reviews.isEmpty
+                            ? const Text(
+                                'No reviews yet',
+                                style: TextStyle(color: Color(0xFF7A8599)),
+                              )
+                            : Column(
+                                children: reviews.take(5).map((review) {
+                                  final name = (review['user_name'] ?? 'User')
+                                      .toString();
+                                  final rating =
+                                      ((review['rating'] as num?) ?? 0)
+                                          .toDouble();
+                                  final feedback = (review['feedback'] ?? '')
+                                      .toString();
+                                  final avatar =
+                                      (review['user_avatar_url'] ?? '')
+                                          .toString();
+
+                                  return _ReviewCard(
+                                    name: name,
+                                    rating: rating,
+                                    feedback: feedback,
+                                    avatarUrl: avatar,
+                                  );
+                                }).toList(),
+                              ),
                       ],
                     ),
 
@@ -254,6 +301,8 @@ class _TopProfileCard extends StatelessWidget {
   final String rate;
   final String availability;
   final Color availabilityColor;
+  final double averageRating;
+  final int totalReviews;
 
   const _TopProfileCard({
     required this.imageUrl,
@@ -262,6 +311,8 @@ class _TopProfileCard extends StatelessWidget {
     required this.rate,
     required this.availability,
     required this.availabilityColor,
+    required this.averageRating,
+    required this.totalReviews,
   });
 
   @override
@@ -328,56 +379,203 @@ class _TopProfileCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+          const SizedBox(height: 12),
+          _StarsRow(rating: averageRating),
+          const SizedBox(height: 4),
+          Text(
+            '${averageRating.toStringAsFixed(1)} • $totalReviews reviews',
+            style: const TextStyle(color: Colors.white70),
+          ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '₹$rate',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(radius: 4, backgroundColor: availabilityColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      availability,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _TopBadge(text: '₹$rate'),
+              _TopBadge(text: availability, dotColor: availabilityColor),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TopBadge extends StatelessWidget {
+  final String text;
+  final Color? dotColor;
+
+  const _TopBadge({required this.text, this.dotColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dotColor != null) ...[
+            CircleAvatar(radius: 4, backgroundColor: dotColor),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingSummary extends StatelessWidget {
+  final double averageRating;
+  final int totalReviews;
+
+  const _RatingSummary({
+    required this.averageRating,
+    required this.totalReviews,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _StarsRow(rating: averageRating, color: Colors.amber),
+        const SizedBox(width: 10),
+        Text(
+          averageRating.toStringAsFixed(1),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF1C274C),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '($totalReviews reviews)',
+          style: const TextStyle(color: Color(0xFF7A8599)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  final String name;
+  final double rating;
+  final String feedback;
+  final String avatarUrl;
+
+  const _ReviewCard({
+    required this.name,
+    required this.rating,
+    required this.feedback,
+    required this.avatarUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE6EBF2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: const Color(0xFFEAF1FF),
+            backgroundImage: avatarUrl.startsWith('http')
+                ? NetworkImage(avatarUrl)
+                : null,
+            child: avatarUrl.startsWith('http')
+                ? null
+                : Text(
+                    initial,
+                    style: const TextStyle(
+                      color: Color(0xFF1E63F3),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1C274C),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  feedback.trim().isEmpty ? 'No feedback' : feedback,
+                  style: const TextStyle(
+                    color: Color(0xFF53627C),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StarsRow extends StatelessWidget {
+  final double rating;
+  final Color color;
+
+  const _StarsRow({required this.rating, this.color = Colors.white});
+
+  @override
+  Widget build(BuildContext context) {
+    final roundedRating = rating.round();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < roundedRating ? Icons.star : Icons.star_border,
+          size: 18,
+          color: color,
+        );
+      }),
     );
   }
 }
