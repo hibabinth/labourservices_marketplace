@@ -78,6 +78,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     }
   }
 
+  double _rating(Map<String, dynamic> worker) {
+    return ((worker['average_rating'] as num?) ?? 0).toDouble();
+  }
+
+  int _reviewCount(Map<String, dynamic> worker) {
+    return ((worker['total_reviews'] as num?) ?? 0).toInt();
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ServiceViewModel>();
@@ -257,220 +265,34 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       final phone = (worker['phone'] ?? '').toString();
                       final availability =
                           (worker['availability'] ?? 'Unavailable').toString();
+                      final avatarUrl = (worker['avatar_url'] ?? '').toString();
+                      final rating = _rating(worker);
+                      final reviews = _reviewCount(worker);
 
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.045),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                      return _TopWorkerCard(
+                        name: name,
+                        category: category,
+                        location: location,
+                        rate: rate,
+                        availability: availability,
+                        avatarUrl: avatarUrl,
+                        rating: rating,
+                        reviews: reviews,
+                        onChat: () => _openWorkerChat(
+                          workerId: workerId,
+                          workerName: name,
+                          workerCategory: category,
+                          workerPhone: phone,
                         ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFEAF1FF),
-                                        Color(0xFFDCE8FF),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 30,
-                                    color: Color(0xFF1E63F3),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        name,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xFF1C274C),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        category,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF1E63F3),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        location,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Color(0xFF7A8599),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        availability.toLowerCase() ==
-                                            'available'
-                                        ? Colors.green.withOpacity(0.10)
-                                        : Colors.orange.withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    availability,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color:
-                                          availability.toLowerCase() ==
-                                              'available'
-                                          ? Colors.green
-                                          : Colors.orange,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                        onView: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  WorkerDetailsScreen(workerId: workerId),
                             ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  size: 18,
-                                  color: Colors.orange,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'New',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1C274C),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                const Icon(
-                                  Icons.currency_rupee_rounded,
-                                  size: 18,
-                                  color: Color(0xFF1E63F3),
-                                ),
-                                Text(
-                                  rate,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E63F3),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 46,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => _openWorkerChat(
-                                        workerId: workerId,
-                                        workerName: name,
-                                        workerCategory: category,
-                                        workerPhone: phone,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.chat_bubble_outline_rounded,
-                                        size: 18,
-                                      ),
-                                      label: const Text(
-                                        'Chat',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(
-                                          0xFF1E63F3,
-                                        ),
-                                        side: const BorderSide(
-                                          color: Color(0xFF1E63F3),
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 46,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => WorkerDetailsScreen(
-                                              workerId: workerId,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF1E63F3,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'View Details',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -483,6 +305,233 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 }
 
+class _TopWorkerCard extends StatelessWidget {
+  final String name;
+  final String category;
+  final String location;
+  final String rate;
+  final String availability;
+  final String avatarUrl;
+  final double rating;
+  final int reviews;
+  final VoidCallback onChat;
+  final VoidCallback onView;
+
+  const _TopWorkerCard({
+    required this.name,
+    required this.category,
+    required this.location,
+    required this.rate,
+    required this.availability,
+    required this.avatarUrl,
+    required this.rating,
+    required this.reviews,
+    required this.onChat,
+    required this.onView,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = availability.toLowerCase() == 'available';
+    final hasImage = avatarUrl.startsWith('http');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.045),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEAF1FF), Color(0xFFDCE8FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: hasImage
+                      ? Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person,
+                            size: 30,
+                            color: Color(0xFF1E63F3),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person,
+                          size: 30,
+                          color: Color(0xFF1E63F3),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1C274C),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E63F3),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF7A8599),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: isAvailable
+                      ? Colors.green.withOpacity(0.10)
+                      : Colors.orange.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  availability,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isAvailable ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, size: 18, color: Colors.amber),
+              const SizedBox(width: 4),
+              Text(
+                rating.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C274C),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '($reviews)',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF7A8599)),
+              ),
+              const SizedBox(width: 14),
+              const Icon(
+                Icons.currency_rupee_rounded,
+                size: 18,
+                color: Color(0xFF1E63F3),
+              ),
+              Text(
+                rate,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E63F3),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton.icon(
+                    onPressed: onChat,
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'Chat',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E63F3),
+                      side: const BorderSide(color: Color(0xFF1E63F3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: onView,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E63F3),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'View Details',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader();
 
@@ -490,10 +539,10 @@ class _HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
+        const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'Welcome Back',
                 style: TextStyle(fontSize: 14, color: Color(0xFF7A8599)),
@@ -557,9 +606,9 @@ class _HeroBanner extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             'Book trusted\nworkers faster',
             style: TextStyle(
